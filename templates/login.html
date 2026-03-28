@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CEMS – Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body class="login-body">
+
+  <div class="login-wrapper">
+    <div class="login-left">
+      <div class="login-brand">
+        <h1>CEMS</h1>
+        <p>College Event Management System</p>
+      </div>
+      <div class="login-desc">
+        <p>Manage events, registrations, payments and certificates — all in one place.</p>
+        <ul>
+          <li>✔ Student Registration Tracking</li>
+          <li>✔ Payment Management</li>
+          <li>✔ Certificate Issuance</li>
+          <li>✔ Department & Venue Control</li>
+        </ul>
+      </div>
+      <div class="login-college">VIT Chennai &nbsp;|&nbsp; DA-3 Project &nbsp;|&nbsp; 24BDS1205</div>
+    </div>
+
+    <div class="login-right">
+      <div class="login-card">
+        <h2>Welcome Back</h2>
+        <p class="login-sub">Sign in to continue</p>
+
+        <div id="login-error" class="login-error" style="display:none"></div>
+
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="login-user" placeholder="Enter username" autocomplete="off"/>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="pass-wrap">
+            <input type="password" id="login-pass" placeholder="Enter password"
+                   onkeydown="if(event.key==='Enter') doLogin()"/>
+            <span class="toggle-pass" onclick="togglePass()">👁</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="doLogin()">Login</button>
+
+        <div class="login-hint">
+          <strong>Demo Credentials:</strong><br/>
+          Admin &nbsp;→ <code>admin / admin123</code><br/>
+          Staff &nbsp;&nbsp;→ <code>staff / staff123</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function doLogin() {
+      const username = document.getElementById("login-user").value.trim();
+      const password = document.getElementById("login-pass").value;
+      const errDiv   = document.getElementById("login-error");
+      errDiv.style.display = "none";
+
+      if (!username || !password) {
+        errDiv.textContent = "Please enter both username and password.";
+        errDiv.style.display = "block";
+        return;
+      }
+
+      try {
+        const res  = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          window.location.href = "/dashboard";
+        } else {
+          errDiv.textContent = data.message || "Invalid credentials.";
+          errDiv.style.display = "block";
+          document.getElementById("login-pass").value = "";
+        }
+      } catch (err) {
+        errDiv.textContent = "Server error. Make sure Flask is running.";
+        errDiv.style.display = "block";
+      }
+    }
+
+    function togglePass() {
+      const inp = document.getElementById("login-pass");
+      inp.type = inp.type === "password" ? "text" : "password";
+    }
+  </script>
+</body>
+</html>
