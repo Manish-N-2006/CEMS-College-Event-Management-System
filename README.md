@@ -27,20 +27,23 @@ A full-stack web application to manage college events, students, registrations, 
 ---
 
 ## 📂 Project Structure
+
+```bash
 CEMS/
-│── app.py
-│── requirements.txt
-│── database.db
+├── app.py
+├── requirements.txt
+├── database.db
 │
 ├── templates/
-│ ├── login.html
-│ └── index.html
+│   ├── login.html
+│   └── index.html
 │
 ├── static/
-│ ├── app.js
-│ └── style.css
+│   ├── app.js
+│   └── style.css
 │
 └── README.md
+```
 
 
 ---
