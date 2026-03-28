@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CEMS – Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>CEMS</h2>
+    <p>College Event Management</p>
+  </div>
+  <ul class="sidebar-menu">
+    <li class="active" onclick="showPage('dashboard',this)">🏠 Dashboard</li>
+    <li onclick="showPage('departments',this)">🏢 Departments</li>
+    <li onclick="showPage('venues',this)">📍 Venues</li>
+    <li onclick="showPage('students',this)">👨‍🎓 Students</li>
+    <li onclick="showPage('events',this)">📅 Events</li>
+    <li onclick="showPage('registrations',this)">📋 Registrations</li>
+    <li onclick="showPage('payments',this)">💳 Payments</li>
+    <li onclick="showPage('certificates',this)">🏆 Certificates</li>
+  </ul>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <span id="sb-username">{{ user.name }}</span>
+      <span class="role-badge">{{ user.role }}</span>
+    </div>
+    <a href="/logout" class="btn-logout">⏻ Logout</a>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main-content" id="mainContent">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <h3 id="pageHeading">Dashboard</h3>
+    </div>
+    <div class="topbar-right">
+      <span class="tag">VIT Chennai</span>
+      <span class="top-user">👤 {{ user.name }}</span>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="page active">
+    <div class="stats-row">
+      <div class="stat-box blue">
+        <div class="stat-number" id="count-events">–</div>
+        <div class="stat-label">Total Events</div>
+      </div>
+      <div class="stat-box green">
+        <div class="stat-number" id="count-students">–</div>
+        <div class="stat-label">Students</div>
+      </div>
+      <div class="stat-box orange">
+        <div class="stat-number" id="count-registrations">–</div>
+        <div class="stat-label">Registrations</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="stat-number" id="count-revenue">–</div>
+        <div class="stat-label">Revenue Collected</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h4>Recent Registrations</h4>
+        <table class="table">
+          <thead><tr><th>Student</th><th>Event</th><th>Status</th></tr></thead>
+          <tbody id="dash-recent-body"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h4>Events List</h4>
+        <table class="table">
+          <thead><tr><th>Event</th><th>Date</th><th>Fee (₹)</th></tr></thead>
+          <tbody id="dash-events-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPARTMENTS -->
+  <div id="departments" class="page">
+    <div class="page-toolbar">
+      <span class="info-note">📌 Departments are master data. Each event belongs to one department.</span>
+      {% if user.role == 'Admin' %}
+      <button class="btn btn-primary" onclick="openDeptModal()">+ Add Department</button>
+      {% endif %}
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Dept Name</th><th>HOD Name</th><th>No. of Events</th><th>Actions</th></tr></thead>
+        <tbody id="dept-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VENUES -->
+  <div id="venues" class="page">
+    <div class="page-toolbar">
+      <span class="info-note">📌 Venues are assigned to events when creating them.</span>
+      {% if user.role == 'Admin' %}
+      <button class="btn btn-primary" onclick="openVenueModal()">+ Add Venue</button>
+      {% endif %}
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Venue Name</th><th>Capacity</th><th>Block</th><th>Floor</th><th>Actions</th></tr></thead>
+        <tbody id="venue-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <div id="students" class="page">
+    <div class="page-toolbar">
+      <input type="text" id="student-search" placeholder="Search by name..." oninput="renderStudents()"/>
+      {% if user.role == 'Admin' %}
+      <button class="btn btn-primary" onclick="openStudentModal()">+ Add Student</button>
+      {% endif %}
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Year</th><th>Dept</th><th>Registrations</th><th>Actions</th></tr></thead>
+        <tbody id="student-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EVENTS -->
+  <div id="events" class="page">
+    <div class="page-toolbar">
+      <input type="text" id="event-search" placeholder="Search events..." oninput="renderEvents()"/>
+      {% if user.role == 'Admin' %}
+      <button class="btn btn-primary" onclick="openEventModal()">+ Add Event</button>
+      {% endif %}
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>ID</th><th>Event Name</th><th>Date</th><th>Type</th><th>Fee (₹)</th><th>Dept</th><th>Venue</th><th>Registered</th><th>Actions</th></tr></thead>
+        <tbody id="event-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REGISTRATIONS -->
+  <div id="registrations" class="page">
+    <div class="page-toolbar">
+      <input type="text" id="reg-search" placeholder="Search by student or event..." oninput="renderRegistrations()"/>
+      <button class="btn btn-primary" onclick="openRegModal()">+ Register Student</button>
+    </div>
+    <div class="info-banner">
+      💡 Registering a student <strong>automatically creates a payment record</strong> for the event fee.
+      Set attendance to <strong>Present</strong> to enable certificate issuance.
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Reg ID</th><th>Student</th><th>Event</th><th>Date</th><th>Status</th><th>Attendance</th><th>Payment</th><th>Actions</th></tr></thead>
+        <tbody id="reg-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAYMENTS -->
+  <div id="payments" class="page">
+    <div class="page-toolbar">
+      <input type="text" id="pay-search" placeholder="Search by student or event..." oninput="renderPayments()"/>
+    </div>
+    <div class="info-banner">
+      💡 Payments are <strong>auto-generated</strong> on registration. Amount is fixed by event fee.
+      You can only update <strong>Mode</strong> and <strong>Status</strong>.
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Pay ID</th><th>Student</th><th>Event</th><th>Amount (₹)</th><th>Mode</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="payment-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CERTIFICATES -->
+  <div id="certificates" class="page">
+    <div class="page-toolbar">
+      <span class="info-note">🏆 Only students marked <strong>Present</strong> in registrations can receive certificates.</span>
+      <button class="btn btn-primary" onclick="openCertModal()">+ Issue Certificate</button>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Cert ID</th><th>Student</th><th>Event</th><th>Type</th><th>Issue Date</th><th>Actions</th></tr></thead>
+        <tbody id="cert-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- end main-content -->
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Department Modal -->
+<div id="dept-modal" class="modal-overlay" onclick="closeOutside(event,'dept-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="dept-modal-title">Add Department</h3>
+      <span class="close-btn" onclick="closeModal('dept-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="d-edit-id"/>
+      <div class="form-group">
+        <label>Department Name</label>
+        <input type="text" id="d-name" placeholder="e.g. CSE"/>
+      </div>
+      <div class="form-group">
+        <label>HOD Name</label>
+        <input type="text" id="d-hod" placeholder="e.g. Dr. Ravi"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('dept-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDept()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Venue Modal -->
+<div id="venue-modal" class="modal-overlay" onclick="closeOutside(event,'venue-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="venue-modal-title">Add Venue</h3>
+      <span class="close-btn" onclick="closeModal('venue-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="v-edit-id"/>
+      <div class="form-group">
+        <label>Venue Name</label>
+        <input type="text" id="v-name" placeholder="e.g. Main Auditorium"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Capacity</label>
+          <input type="number" id="v-capacity" placeholder="500"/>
+        </div>
+        <div class="form-group">
+          <label>Block</label>
+          <input type="text" id="v-block" placeholder="A"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Floor</label>
+        <input type="number" id="v-floor" placeholder="1"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('venue-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveVenue()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Student Modal -->
+<div id="student-modal" class="modal-overlay" onclick="closeOutside(event,'student-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="student-modal-title">Add Student</h3>
+      <span class="close-btn" onclick="closeModal('student-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="s-edit-id"/>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="s-name" placeholder="Enter full name"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="s-email" placeholder="example@gmail.com"/>
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="text" id="s-phone" placeholder="10-digit number" maxlength="10"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Year of Study</label>
+          <select id="s-year">
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <select id="s-dept"></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('student-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event Modal -->
+<div id="event-modal" class="modal-overlay" onclick="closeOutside(event,'event-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="event-modal-title">Add Event</h3>
+      <span class="close-btn" onclick="closeModal('event-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="e-edit-id"/>
+      <div class="form-group">
+        <label>Event Name</label>
+        <input type="text" id="e-name" placeholder="e.g. Hackathon 2026"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="e-date"/>
+        </div>
+        <div class="form-group">
+          <label>Event Type</label>
+          <select id="e-type">
+            <option>Technical</option>
+            <option>Non-Technical</option>
+            <option>Sports</option>
+            <option>Cultural</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Registration Fee (₹)</label>
+          <input type="number" id="e-fee" placeholder="0" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <select id="e-dept"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Venue</label>
+        <select id="e-venue"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('event-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Registration Modal -->
+<div id="reg-modal" class="modal-overlay" onclick="closeOutside(event,'reg-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="reg-modal-title">Register Student for Event</h3>
+      <span class="close-btn" onclick="closeModal('reg-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="r-edit-id"/>
+      <div id="r-new-fields">
+        <div class="form-group">
+          <label>Student</label>
+          <select id="r-student"></select>
+        </div>
+        <div class="form-group">
+          <label>Event</label>
+          <select id="r-event" onchange="showEventFee()"></select>
+        </div>
+        <div class="fee-preview" id="fee-preview" style="display:none">
+          Event Fee: <strong id="fee-preview-amount">₹0</strong> — a payment record will be auto-created.
+        </div>
+        <div class="form-group">
+          <label>Registration Date</label>
+          <input type="date" id="r-date"/>
+        </div>
+      </div>
+      <div id="r-edit-fields" style="display:none">
+        <div class="form-group read-only-group">
+          <label>Student</label>
+          <div class="read-only-val" id="r-edit-student-name">–</div>
+        </div>
+        <div class="form-group read-only-group">
+          <label>Event</label>
+          <div class="read-only-val" id="r-edit-event-name">–</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="r-status">
+            <option>Confirmed</option>
+            <option>Pending</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Attendance</label>
+          <select id="r-attendance">
+            <option>Present</option>
+            <option>Absent</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('reg-modal')">Cancel</button>
+      <button class="btn btn-primary" id="reg-save-btn" onclick="saveRegistration()">Register</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="modal-overlay" onclick="closeOutside(event,'payment-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Update Payment</h3>
+      <span class="close-btn" onclick="closeModal('payment-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="p-edit-id"/>
+      <div class="form-group read-only-group">
+        <label>Student</label>
+        <div class="read-only-val" id="p-student-name">–</div>
+      </div>
+      <div class="form-group read-only-group">
+        <label>Event</label>
+        <div class="read-only-val" id="p-event-name">–</div>
+      </div>
+      <div class="form-group read-only-group">
+        <label>Amount (fixed by event fee)</label>
+        <div class="read-only-val" id="p-amount-display">₹0</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Payment Mode</label>
+          <select id="p-mode">
+            <option>UPI</option>
+            <option>Cash</option>
+            <option>Credit Card</option>
+            <option>Debit Card</option>
+            <option>Net Banking</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Payment Date</label>
+          <input type="date" id="p-date"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Payment Status</label>
+        <select id="p-status">
+          <option>Paid</option>
+          <option>Pending</option>
+          <option>Failed</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('payment-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- Certificate Modal -->
+<div id="cert-modal" class="modal-overlay" onclick="closeOutside(event,'cert-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Issue Certificate</h3>
+      <span class="close-btn" onclick="closeModal('cert-modal')">✕</span>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="c-edit-id"/>
+      <div class="form-group">
+        <label>Select Student (Present &amp; not yet certified)</label>
+        <select id="c-reg"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Certificate Type</label>
+          <select id="c-type">
+            <option>Participation</option>
+            <option>Merit</option>
+            <option>Winner</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Issue Date</label>
+          <input type="date" id="c-date"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cert-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCertificate()">Issue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-overlay" class="modal-overlay" style="z-index:2000">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>Confirm Delete</h3></div>
+    <div class="modal-body">
+      <p id="confirm-msg" style="font-size:14px;color:#444;line-height:1.6"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirm-overlay')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-yes-btn">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script>
+  window.userRole = "{{ user.role }}";
+</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
